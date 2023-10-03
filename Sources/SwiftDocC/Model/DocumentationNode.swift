@@ -185,14 +185,16 @@ public struct DocumentationNode {
     init(reference: ResolvedTopicReference, unifiedSymbol: UnifiedSymbolGraph.Symbol, moduleData: SymbolGraph.Module, moduleReference: ResolvedTopicReference) {
         self.reference = reference
         
-        guard let defaultSymbol = unifiedSymbol.defaultSymbol else {
+        // Select the symbol with documentation (which has non-nil docComment);
+        // otherwise use the default symbol, normally the Swift symbol.
+        guard let documentationSymbol = unifiedSymbol.documentedSymbol ?? unifiedSymbol.defaultSymbol else {
             fatalError("Unexpectedly failed to get 'defaultSymbol' from 'unifiedSymbol'.")
         }
-        
-        self.kind = Self.kind(for: defaultSymbol)
+
+        self.kind = Self.kind(for: documentationSymbol)
         self.sourceLanguage = reference.sourceLanguage
-        self.name = .symbol(declaration: .init([.plain(defaultSymbol.names.title)]))
-        self.symbol = defaultSymbol
+        self.name = .symbol(declaration: .init([.plain(documentationSymbol.names.title)]))
+        self.symbol = documentationSymbol
         self.unifiedSymbol = unifiedSymbol
         self.isVirtual = moduleData.isVirtual
         
