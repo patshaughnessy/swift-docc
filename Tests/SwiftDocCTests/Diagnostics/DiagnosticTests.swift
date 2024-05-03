@@ -98,6 +98,33 @@ class DiagnosticTests: XCTestCase {
         XCTAssertEqual(problem.diagnostic.range, SourceLocation(line: 11, column: 20, source: nil)..<SourceLocation(line: 11, column: 29, source: nil))
     }
 
+    func testOffsetDiagnosticsLongDocComment() throws {
+
+        // This bundle contains an invalid link in one of the symbol graph
+        // files, and a few other problems related to parameter validation.
+        // (Tests/SwiftDocCTests/Test Bundles/ObjCFrameworkWithInvalidLink.docc/symbol-graphs/clang/HelloWorldFramework.symbols.json)
+
+        // However, also include a documentation extension markdown file, which
+        // does not have any errors in it.
+        let (_, bundle, context) = try testBundleAndContext(copying: "ObjCFrameworkWithInvalidLink", externalResolvers: [:]) { url in
+            try """
+            # ``HelloWorldFramework/Hello/log:prefixWith:``
+            """.write(to: url.appendingPathComponent("documentation/hello.md"), atomically: true, encoding: .utf8)
+            }
+
+        // We expect all of the problems to have the original source location
+        // of the Objective-C doc comments, not the location of the
+        // documentation extension above.
+        for problem in context.problems {
+            if let sourcePath = problem.diagnostic.source?.path() {
+                XCTAssertEqual(
+                    sourcePath,
+                    "/Users/admin/HelloWorldFramework/HelloWorldFramework/HelloWorldFramework.h"
+                )
+            }
+        }
+    }
+
     func testFormattedDescription() {
         let source = URL(string: "/path/to/file.md")!
         let range = SourceLocation(line: 1, column: 8, source: source)..<SourceLocation(line: 10, column: 21, source: source)

@@ -48,8 +48,19 @@ func unresolvedReferenceProblem(source: URL?, range: SourceRange?, severity: Dia
     } else {
         diagnosticRange = referenceSourceRange
     }
-    
-    let diagnostic = Diagnostic(source: source, severity: severity, range: diagnosticRange, identifier: "org.swift.docc.unresolvedTopicReference", summary: errorInfo.message, notes: notes)
+
+    // If the source location from the diagnostic range, if present, does not
+    // match the diagnostic source location use the range's source location
+    // instead. This indicates that the problem occurred in source code doc
+    // comments and not in a markdown article or documentation extension.
+    let diagnosticSource: URL?
+    if let range = diagnosticRange, range.lowerBound.source != source {
+        diagnosticSource = range.lowerBound.source
+    } else {
+        diagnosticSource = source
+    }
+
+    let diagnostic = Diagnostic(source: diagnosticSource, severity: severity, range: diagnosticRange, identifier: "org.swift.docc.unresolvedTopicReference", summary: errorInfo.message, notes: notes)
     return Problem(diagnostic: diagnostic, possibleSolutions: solutions)
 }
 
