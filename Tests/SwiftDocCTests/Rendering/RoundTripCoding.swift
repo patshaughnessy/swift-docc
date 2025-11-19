@@ -25,7 +25,9 @@ func assertRoundTripCoding<Value: Equatable>(
 
     // Decode one time
     let encoded = try encoder.encode(value)
+
     let decoded = try decoder.decode(Value.self, from: encoded)
+
     XCTAssertEqual(value, decoded, file: (file), line: line)
     
     // Decode a second time to ensure no data is lost during the round-trip
@@ -56,7 +58,24 @@ func assertJSONRepresentation<Value: Decodable & Equatable>(
     #else
     encoding = json.fastestEncoding
     #endif
+
     XCTAssertNoThrow(decoded = try decoder.decode(Value.self, from: XCTUnwrap(json.data(using: encoding))))
 
     XCTAssertEqual(decoded, value, file: (file), line: line)
+}
+
+func assertJSONEncoding<Value: Encodable & Equatable>(
+    _ value: Value,
+    jsonSortedKeysNoWhitespace: String,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) throws {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = .sortedKeys
+    let encoded = try encoder.encode(value)
+    guard let json = String(data: encoded, encoding: .utf8) else {
+        XCTFail("Invalid encoded data", file: file, line: line)
+        return
+    }
+    XCTAssertEqual(json, jsonSortedKeysNoWhitespace, file: file, line: line)
 }
